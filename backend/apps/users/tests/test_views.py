@@ -40,17 +40,17 @@ class TestUserSearchView:
         client = make_client(user)
         response = client.get(reverse("user_search") + "?search=bob")
         assert response.status_code == 200
-        assert len(response.data["results"]) == 1
-        assert response.data["results"][0]["username"] == "bob"
+        assert len(response.data) == 1
+        assert response.data[0]["username"] == "bob"
 
     def test_search_excludes_self(self, user):
         client = make_client(user)
         response = client.get(reverse("user_search") + "?search=alice")
         assert response.status_code == 200
-        assert len(response.data["results"]) == 0
+        assert len(response.data) == 0
 
     def test_empty_query_returns_nothing(self, user):
         client = make_client(user)
         response = client.get(reverse("user_search"))
         assert response.status_code == 200
-        assert len(response.data["results"]) == 0
+        assert len(response.data) == 0
