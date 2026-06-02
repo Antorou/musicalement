@@ -119,3 +119,21 @@ class TestLikeToggleView:
         response = client.post(reverse("post_like", kwargs={"pk": post.id}))  # unlike
         assert response.data["liked"] is False
         assert response.data["likes_count"] == 0
+
+
+@pytest.mark.django_db
+class TestCommentDestroyView:
+    def test_non_author_cannot_delete_comment(self):
+        alice = make_user("alice", "s_alice")
+        bob = make_user("bob", "s_bob")
+        post = make_post(alice)
+
+        from apps.posts.models import Comment
+        comment = Comment.objects.create(post=post, user=alice, body="alice's comment")
+
+        client = make_client(bob)
+        response = client.delete(
+            reverse("comment_destroy", kwargs={"pk": post.id, "comment_pk": comment.id})
+        )
+        assert response.status_code == 404
+        assert Comment.objects.filter(id=comment.id).exists()

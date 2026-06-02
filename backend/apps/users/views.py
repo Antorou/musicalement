@@ -22,7 +22,7 @@ from .serializers import UserSerializer
 SPOTIFY_AUTH_URL = "https://accounts.spotify.com/authorize"
 SPOTIFY_TOKEN_URL = "https://accounts.spotify.com/api/token"
 SPOTIFY_ME_URL = "https://api.spotify.com/v1/me"
-SPOTIFY_SCOPES = "user-read-currently-playing user-read-recently-played"
+SPOTIFY_SCOPES = "user-read-private user-read-email"
 
 
 def _get_jwt_for_user(user):
