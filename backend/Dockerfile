@@ -22,7 +22,8 @@ WORKDIR /app
 COPY . .
 
 ENV PATH="/venv/bin:$PATH"
+ENV DJANGO_SETTINGS_MODULE="musicalement.settings.prod"
 
 EXPOSE 8000
 
-CMD ["gunicorn", "musicalmente.wsgi:application", "--bind", "0.0.0.0:8000", "--workers", "2"]
+CMD ["gunicorn", "musicalement.wsgi:application", "--bind", "0.0.0.0:8000", "--workers", "2"]

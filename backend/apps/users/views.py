@@ -10,6 +10,7 @@ import urllib.parse
 from datetime import timedelta
 
 import requests
+from django.core.cache import cache
 from django.conf import settings
 from django.shortcuts import redirect
 from django.utils import timezone
@@ -40,6 +41,7 @@ class SpotifyAuthView(generics.GenericAPIView):
 
     def get(self, request):
         state = secrets.token_urlsafe(16)
+        cache.set(f"oauth_state:{state}", True, timeout=300)
         params = {
             "client_id": settings.SPOTIFY_CLIENT_ID,
             "response_type": "code",
@@ -63,9 +65,16 @@ class SpotifyCallbackView(generics.GenericAPIView):
     def get(self, request):
         code = request.GET.get("code")
         error = request.GET.get("error")
+        state = request.GET.get("state")
 
         if error or not code:
             return redirect(f"{settings.FRONTEND_URL}/login?error=spotify_denied")
+
+        # Validate state to prevent CSRF — must match a value we issued
+        cache_key = f"oauth_state:{state}"
+        if not state or not cache.get(cache_key):
+            return redirect(f"{settings.FRONTEND_URL}/login?error=invalid_state")
+        cache.delete(cache_key)
 
         # Exchange authorization code for Spotify tokens
         token_response = requests.post(
