@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import api from "../api/client";
+import Navbar from "../components/Navbar";
 
 export default function Publish() {
   const [query, setQuery] = useState("");
@@ -47,61 +48,75 @@ export default function Publish() {
   }
 
   return (
-    <div style={{ maxWidth: 600, margin: "2rem auto", padding: "1rem" }}>
-      <h2>What are you listening to today?</h2>
+    <div className="min-h-screen bg-gray-950 text-white">
+      <Navbar />
+      <main className="max-w-2xl mx-auto px-4 py-8">
+        <h1 className="text-2xl font-bold mb-2">What are you listening to?</h1>
+        <p className="text-gray-400 mb-6">One track, once a day.</p>
 
-      <form onSubmit={handleSearch} style={{ display: "flex", gap: "0.5rem", marginBottom: "1rem" }}>
-        <input
-          value={query}
-          onChange={(e) => setQuery(e.target.value)}
-          placeholder="Search for a track…"
-          style={{ flex: 1, padding: "0.5rem" }}
-        />
-        <button type="submit" disabled={searching}>
-          {searching ? "Searching…" : "Search"}
-        </button>
-      </form>
-
-      {error && <p style={{ color: "red" }}>{error}</p>}
-
-      {results.length > 0 && (
-        <ul style={{ listStyle: "none", padding: 0 }}>
-          {results.map((track) => (
-            <li
-              key={track.spotify_track_id}
-              onClick={() => setSelected(track)}
-              style={{
-                display: "flex",
-                alignItems: "center",
-                gap: "0.75rem",
-                padding: "0.5rem",
-                cursor: "pointer",
-                borderRadius: 6,
-                background: selected?.spotify_track_id === track.spotify_track_id ? "#e8f4ff" : "transparent",
-                border: selected?.spotify_track_id === track.spotify_track_id ? "1px solid #0070f3" : "1px solid transparent",
-                marginBottom: "0.5rem",
-              }}
-            >
-              {track.album_cover_url && (
-                <img src={track.album_cover_url} alt="album" width={48} height={48} style={{ borderRadius: 4 }} />
-              )}
-              <div>
-                <div style={{ fontWeight: 600 }}>{track.track_title}</div>
-                <div style={{ fontSize: "0.85rem", color: "#666" }}>{track.artist_name} — {track.album_name}</div>
-              </div>
-            </li>
-          ))}
-        </ul>
-      )}
-
-      {selected && (
-        <div style={{ marginTop: "1rem" }}>
-          <p>Sharing: <strong>{selected.track_title}</strong> by {selected.artist_name}</p>
-          <button onClick={handlePublish} disabled={publishing}>
-            {publishing ? "Sharing…" : "Share now"}
+        <form onSubmit={handleSearch} className="flex gap-2 mb-6">
+          <input
+            value={query}
+            onChange={(e) => setQuery(e.target.value)}
+            placeholder="Search for a track or artist…"
+            className="flex-1 bg-gray-900 border border-white/10 rounded-xl px-4 py-2.5 text-white placeholder-gray-600 focus:outline-none focus:border-violet-500"
+          />
+          <button
+            type="submit"
+            disabled={searching}
+            className="px-5 py-2.5 bg-violet-600 hover:bg-violet-500 disabled:opacity-50 rounded-xl font-medium transition-colors"
+          >
+            {searching ? "…" : "Search"}
           </button>
-        </div>
-      )}
+        </form>
+
+        {error && (
+          <p className="text-red-400 text-sm mb-4">{error}</p>
+        )}
+
+        {results.length > 0 && (
+          <ul className="space-y-2 mb-6">
+            {results.map((track) => (
+              <li
+                key={track.spotify_track_id}
+                onClick={() => setSelected(track)}
+                className={`flex items-center gap-3 p-3 rounded-xl cursor-pointer border transition-all ${
+                  selected?.spotify_track_id === track.spotify_track_id
+                    ? "border-violet-500 bg-violet-500/10"
+                    : "border-white/5 bg-gray-900 hover:border-white/20"
+                }`}
+              >
+                {track.album_cover_url && (
+                  <img
+                    src={track.album_cover_url}
+                    alt="album"
+                    className="w-12 h-12 rounded-lg object-cover flex-shrink-0"
+                  />
+                )}
+                <div className="min-w-0">
+                  <p className="font-medium truncate">{track.track_title}</p>
+                  <p className="text-sm text-gray-400 truncate">
+                    {track.artist_name} — {track.album_name}
+                  </p>
+                </div>
+                {selected?.spotify_track_id === track.spotify_track_id && (
+                  <span className="ml-auto text-violet-400 flex-shrink-0">✓</span>
+                )}
+              </li>
+            ))}
+          </ul>
+        )}
+
+        {selected && (
+          <button
+            onClick={handlePublish}
+            disabled={publishing}
+            className="w-full py-3 bg-violet-600 hover:bg-violet-500 disabled:opacity-50 rounded-xl font-semibold transition-colors"
+          >
+            {publishing ? "Sharing…" : `Share "${selected.track_title}"`}
+          </button>
+        )}
+      </main>
     </div>
   );
 }

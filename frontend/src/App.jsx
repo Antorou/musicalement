@@ -24,11 +24,13 @@ function AuthCallback() {
 
 function LoginPage() {
   return (
-    <div style={{ textAlign: "center", marginTop: "4rem" }}>
-      <h1>Musicalement</h1>
-      <p>Share what you're listening to, once a day.</p>
+    <div className="min-h-screen bg-gray-950 text-white flex flex-col items-center justify-center px-4">
+      <h1 className="text-4xl font-bold text-violet-400 mb-2 tracking-tight">musicalement</h1>
+      <p className="text-gray-400 mb-8">Share what you're listening to, once a day.</p>
       <a href="/api/v1/auth/spotify/">
-        <button>Connect with Spotify</button>
+        <button className="px-8 py-3 bg-violet-600 hover:bg-violet-500 rounded-xl font-semibold text-white transition-colors">
+          Connect with Spotify
+        </button>
       </a>
     </div>
   );
@@ -53,6 +55,14 @@ export default function App() {
           element={
             <PrivateRoute>
               <Publish />
+            </PrivateRoute>
+          }
+        />
+        <Route
+          path="/profile"
+          element={
+            <PrivateRoute>
+              <Profile />
             </PrivateRoute>
           }
         />
