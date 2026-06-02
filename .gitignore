@@ -54,6 +54,7 @@ frontend/.vite/
 *.tfstate.*
 *.tfvars
 !*.tfvars.example
+backend.hcl
 .terraformrc
 terraform.rc
 

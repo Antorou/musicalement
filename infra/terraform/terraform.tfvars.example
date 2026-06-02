@@ -1,0 +1,6 @@
+aws_region   = "eu-west-3"
+project_name = "musicalement"
+environment  = "dev"
+db_name      = "musicalement"
+db_username  = "musicalement"
+db_password  = "change-me-strong-password"

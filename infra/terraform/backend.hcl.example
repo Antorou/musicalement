@@ -1,0 +1,6 @@
+# Run `make tf-bootstrap-apply` first, then copy the outputs here.
+bucket         = "musicalement-tfstate-xxxxx"
+key            = "musicalement/terraform.tfstate"
+region         = "eu-west-3"
+dynamodb_table = "musicalement-tfstate-lock"
+encrypt        = true
