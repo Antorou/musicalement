@@ -123,7 +123,7 @@ class SpotifyCallbackView(generics.GenericAPIView):
 
         # Send tokens to the frontend via query string; frontend removes them from URL immediately
         redirect_url = (
-            f"{settings.FRONTEND_URL}/?token={jwt_access}&refresh={jwt_refresh}"
+            f"{settings.FRONTEND_URL}/callback?token={jwt_access}&refresh={jwt_refresh}"
         )
         return redirect(redirect_url)
 

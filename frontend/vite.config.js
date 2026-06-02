@@ -9,7 +9,7 @@ export default defineConfig({
     // so the browser always talks to localhost:5173 and we avoid CORS issues
     proxy: {
       "/api": {
-        target: "http://localhost:8000",
+        target: process.env.VITE_API_TARGET || "http://web:8000",
         changeOrigin: true,
       },
     },

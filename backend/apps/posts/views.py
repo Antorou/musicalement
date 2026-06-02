@@ -1,14 +1,5 @@
-"""
-Post views:
-- CreatePostView: fetches current/recent Spotify track, creates Post
-- FeedView: friends' posts today (gated: you must have posted today)
-- MyPostsView: own full post history
-- LikeToggleView: like or unlike a post
-- CommentListCreateView / CommentDestroyView: comments on a post
-"""
 import requests
-from django.conf import settings
-from django.db import IntegrityError
+from django.db.models import Q
 from django.utils import timezone
 from rest_framework import generics, permissions, status
 from rest_framework.response import Response
@@ -19,31 +10,8 @@ from apps.friendships.models import Friendship
 from .models import Comment, Like, Post
 from .serializers import CommentSerializer, PostSerializer
 
-SPOTIFY_CURRENTLY_PLAYING = "https://api.spotify.com/v1/me/player/currently-playing"
-SPOTIFY_RECENTLY_PLAYED = "https://api.spotify.com/v1/me/player/recently-played?limit=1"
-
-
-def _fetch_track_from_spotify(user):
-    """
-    Returns a dict with track info, or None if Spotify fails.
-    Tries currently-playing first, falls back to recently-played.
-    """
-    headers = {"Authorization": f"Bearer {user.spotify_access_token}"}
-
-    # Try currently playing
-    resp = requests.get(SPOTIFY_CURRENTLY_PLAYING, headers=headers, timeout=5)
-    if resp.status_code == 200 and resp.json().get("item"):
-        item = resp.json()["item"]
-        return _extract_track(item)
-
-    # Fallback: most recently played
-    resp = requests.get(SPOTIFY_RECENTLY_PLAYED, headers=headers, timeout=5)
-    if resp.status_code == 200:
-        items = resp.json().get("items", [])
-        if items:
-            return _extract_track(items[0]["track"])
-
-    return None
+SPOTIFY_SEARCH_URL = "https://api.spotify.com/v1/search"
+SPOTIFY_TRACK_URL = "https://api.spotify.com/v1/tracks/{track_id}"
 
 
 def _extract_track(item):
@@ -57,12 +25,19 @@ def _extract_track(item):
     }
 
 
+def _fetch_track_by_id(user, spotify_track_id):
+    headers = {"Authorization": f"Bearer {user.spotify_access_token}"}
+    resp = requests.get(SPOTIFY_TRACK_URL.format(track_id=spotify_track_id), headers=headers, timeout=5)
+    if resp.status_code == 200:
+        return _extract_track(resp.json())
+    return None
+
+
 def _get_friend_ids(user):
-    """Returns a set of user IDs that are confirmed friends with the given user."""
     friendships = Friendship.objects.filter(
         status="accepted"
     ).filter(
-        models.Q(from_user=user) | models.Q(to_user=user)
+        Q(from_user=user) | Q(to_user=user)
     )
     ids = set()
     for f in friendships:
@@ -70,33 +45,45 @@ def _get_friend_ids(user):
     return ids
 
 
-# Import Q here after the function that uses it
-from django.db import models as django_models  # noqa: E402
+class TrackSearchView(APIView):
+    """GET /api/v1/posts/search-tracks/?q=<query> — search Spotify for tracks."""
+    permission_classes = [permissions.IsAuthenticated]
 
+    def get(self, request):
+        q = request.query_params.get("q", "").strip()
+        if not q:
+            return Response({"results": []})
 
-def _get_friend_ids_v2(user):
-    """Returns a set of user IDs that are confirmed friends with the given user."""
-    friendships = Friendship.objects.filter(
-        status="accepted"
-    ).filter(
-        django_models.Q(from_user=user) | django_models.Q(to_user=user)
-    )
-    ids = set()
-    for f in friendships:
-        ids.add(f.from_user_id if f.to_user_id == user.id else f.to_user_id)
-    return ids
+        headers = {"Authorization": f"Bearer {request.user.spotify_access_token}"}
+        resp = requests.get(
+            SPOTIFY_SEARCH_URL,
+            params={"q": q, "type": "track", "limit": 10},
+            headers=headers,
+            timeout=5,
+        )
+        if resp.status_code != 200:
+            return Response({"detail": "spotify_error"}, status=status.HTTP_502_BAD_GATEWAY)
+
+        tracks = resp.json().get("tracks", {}).get("items", [])
+        results = [_extract_track(t) for t in tracks]
+        return Response({"results": results})
 
 
 class CreatePostView(APIView):
     permission_classes = [permissions.IsAuthenticated]
 
     def post(self, request):
-        track = _fetch_track_from_spotify(request.user)
+        today = timezone.now().date()
+        if Post.objects.filter(user=request.user, created_at__date=today).exists():
+            return Response({"detail": "already_posted_today"}, status=status.HTTP_400_BAD_REQUEST)
+
+        spotify_track_id = request.data.get("spotify_track_id")
+        if not spotify_track_id:
+            return Response({"detail": "spotify_track_id is required"}, status=status.HTTP_400_BAD_REQUEST)
+
+        track = _fetch_track_by_id(request.user, spotify_track_id)
         if not track:
-            return Response(
-                {"detail": "Could not fetch track from Spotify. Make sure something is playing."},
-                status=status.HTTP_422_UNPROCESSABLE_ENTITY,
-            )
+            return Response({"detail": "no_track"}, status=status.HTTP_422_UNPROCESSABLE_ENTITY)
 
         post = Post.objects.create(user=request.user, **track)
         return Response(PostSerializer(post, context={"request": request}).data, status=status.HTTP_201_CREATED)
@@ -125,7 +112,7 @@ class FeedView(generics.ListAPIView):
                 status=status.HTTP_403_FORBIDDEN,
             )
 
-        friend_ids = _get_friend_ids_v2(request.user)
+        friend_ids = _get_friend_ids(request.user)
         now = timezone.now()
         queryset = Post.objects.filter(
             user_id__in=friend_ids,
@@ -185,6 +172,7 @@ class CommentListCreateView(generics.ListCreateAPIView):
 class CommentDestroyView(generics.DestroyAPIView):
     serializer_class = CommentSerializer
     permission_classes = [permissions.IsAuthenticated]
+    lookup_url_kwarg = "comment_pk"
 
     def get_queryset(self):
         return Comment.objects.filter(user=self.request.user, post_id=self.kwargs["pk"])

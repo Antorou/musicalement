@@ -8,10 +8,12 @@ from .views import (
     LikeToggleView,
     MyPostsView,
     PostDestroyView,
+    TrackSearchView,
 )
 
 # Mounted at /api/v1/posts/
 urlpatterns = [
+    path("search-tracks/", TrackSearchView.as_view(), name="track_search"),
     path("", CreatePostView.as_view(), name="post_create"),
     path("feed/", FeedView.as_view(), name="post_feed"),
     path("me/", MyPostsView.as_view(), name="post_my"),

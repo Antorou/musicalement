@@ -27,12 +27,12 @@ export default function PostCard({ post, onLikeToggle }) {
 
   return (
     <div style={{ border: "1px solid #ccc", padding: "1rem", marginBottom: "1rem" }}>
-      <strong>{post.author_username}</strong>
+      <strong>{post.user?.username}</strong>
       <p>
-        {post.track_name} — {post.artist_name}
+        {post.track_title} — {post.artist_name}
       </p>
-      {post.album_art_url && (
-        <img src={post.album_art_url} alt="album art" width={80} />
+      {post.album_cover_url && (
+        <img src={post.album_cover_url} alt="album art" width={80} />
       )}
       <p style={{ fontSize: "0.85rem", color: "#666" }}>
         {post.likes_count} like{post.likes_count !== 1 ? "s" : ""}
@@ -45,7 +45,7 @@ export default function PostCard({ post, onLikeToggle }) {
         <div style={{ marginTop: "0.5rem" }}>
           {comments.map((c) => (
             <p key={c.id} style={{ margin: "0.25rem 0" }}>
-              <strong>{c.author_username}</strong>: {c.body}
+              <strong>{c.user?.username}</strong>: {c.body}
             </p>
           ))}
           <form onSubmit={handleComment}>
