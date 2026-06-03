@@ -1,0 +1,24 @@
+FROM node:20-slim AS base
+
+WORKDIR /app
+COPY package.json package-lock.json ./
+RUN npm ci
+
+
+FROM base AS dev
+
+CMD ["npx", "vite", "--host"]
+
+
+FROM base AS builder
+
+RUN npm run build
+
+
+FROM nginx:alpine AS runtime
+
+COPY --from=builder /app/dist /usr/share/nginx/html
+COPY nginx.conf /etc/nginx/conf.d/default.conf
+
+EXPOSE 80
+CMD ["nginx", "-g", "daemon off;"]
