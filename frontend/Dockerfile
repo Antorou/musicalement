@@ -12,6 +12,7 @@ CMD ["npx", "vite", "--host"]
 
 FROM base AS builder
 
+COPY . .
 RUN npm run build
 
 
