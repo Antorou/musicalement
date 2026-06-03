@@ -2,6 +2,7 @@ from django.urls import path
 
 from .views import (
     CommentDestroyView,
+    CommentLikeToggleView,
     CommentListCreateView,
     CreatePostView,
     FeedView,
@@ -21,4 +22,5 @@ urlpatterns = [
     path("<uuid:pk>/like/", LikeToggleView.as_view(), name="post_like"),
     path("<uuid:pk>/comments/", CommentListCreateView.as_view(), name="comment_list_create"),
     path("<uuid:pk>/comments/<uuid:comment_pk>/", CommentDestroyView.as_view(), name="comment_destroy"),
+    path("<uuid:pk>/comments/<uuid:comment_pk>/like/", CommentLikeToggleView.as_view(), name="comment_like"),
 ]

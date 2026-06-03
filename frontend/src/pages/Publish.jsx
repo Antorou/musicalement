@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import api from "../api/client";
 import Navbar from "../components/Navbar";
@@ -12,21 +12,37 @@ export default function Publish() {
   const [error, setError] = useState(null);
   const navigate = useNavigate();
 
-  async function handleSearch(e) {
-    e.preventDefault();
-    if (!query.trim()) return;
-    setSearching(true);
-    setSelected(null);
-    setError(null);
-    try {
-      const { data } = await api.get(`/posts/search-tracks/?q=${encodeURIComponent(query)}`);
-      setResults(data.results);
-    } catch {
-      setError("Search failed. Try again.");
-    } finally {
+  // Guards against out-of-order responses: only the latest request wins
+  const latestQuery = useRef("");
+
+  // Search as you type, debounced so we don't hit Spotify on every keystroke
+  useEffect(() => {
+    const q = query.trim();
+    latestQuery.current = q;
+
+    if (!q) {
+      setResults([]);
       setSearching(false);
+      return;
     }
-  }
+
+    setSearching(true);
+    const handle = setTimeout(async () => {
+      try {
+        const { data } = await api.get(`/posts/search-tracks/?q=${encodeURIComponent(q)}`);
+        if (latestQuery.current === q) {
+          setResults(data.results);
+          setError(null);
+        }
+      } catch {
+        if (latestQuery.current === q) setError("Search failed. Try again.");
+      } finally {
+        if (latestQuery.current === q) setSearching(false);
+      }
+    }, 350);
+
+    return () => clearTimeout(handle);
+  }, [query]);
 
   async function handlePublish() {
     if (!selected) return;
@@ -54,21 +70,21 @@ export default function Publish() {
         <h1 className="text-2xl font-bold mb-2">What are you listening to?</h1>
         <p className="text-gray-400 mb-6">One track, once a day.</p>
 
-        <form onSubmit={handleSearch} className="flex gap-2 mb-6">
+        <div className="relative mb-6">
           <input
             value={query}
-            onChange={(e) => setQuery(e.target.value)}
+            onChange={(e) => {
+              setQuery(e.target.value);
+              setSelected(null);
+            }}
             placeholder="Search for a track or artist…"
-            className="flex-1 bg-gray-900 border border-white/10 rounded-xl px-4 py-2.5 text-white placeholder-gray-600 focus:outline-none focus:border-violet-500"
+            autoFocus
+            className="w-full bg-gray-900 border border-white/10 rounded-xl px-4 py-2.5 pr-10 text-white placeholder-gray-600 focus:outline-none focus:border-violet-500"
           />
-          <button
-            type="submit"
-            disabled={searching}
-            className="px-5 py-2.5 bg-violet-600 hover:bg-violet-500 disabled:opacity-50 rounded-xl font-medium transition-colors"
-          >
-            {searching ? "…" : "Search"}
-          </button>
-        </form>
+          {searching && (
+            <div className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 border-2 border-violet-500 border-t-transparent rounded-full animate-spin" />
+          )}
+        </div>
 
         {error && (
           <p className="text-red-400 text-sm mb-4">{error}</p>
@@ -105,6 +121,10 @@ export default function Publish() {
               </li>
             ))}
           </ul>
+        )}
+
+        {query.trim() && !searching && results.length === 0 && !error && (
+          <p className="text-gray-500 text-sm mb-6">No tracks found for {query.trim()}.</p>
         )}
 
         {selected && (

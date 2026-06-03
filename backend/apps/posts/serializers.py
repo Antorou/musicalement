@@ -7,11 +7,19 @@ from .models import Comment, Post
 
 class CommentSerializer(serializers.ModelSerializer):
     user = UserSerializer(read_only=True)
+    likes_count = serializers.IntegerField(source="likes.count", read_only=True)
+    liked_by_me = serializers.SerializerMethodField()
 
     class Meta:
         model = Comment
-        fields = ["id", "user", "body", "created_at"]
-        read_only_fields = ["id", "user", "created_at"]
+        fields = ["id", "user", "body", "created_at", "likes_count", "liked_by_me"]
+        read_only_fields = ["id", "user", "created_at", "likes_count", "liked_by_me"]
+
+    def get_liked_by_me(self, obj):
+        request = self.context.get("request")
+        if request and request.user.is_authenticated:
+            return obj.likes.filter(user=request.user).exists()
+        return False
 
 
 class PostSerializer(serializers.ModelSerializer):

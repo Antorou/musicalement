@@ -1,13 +1,12 @@
 import requests
-from django.db.models import Q
 from django.utils import timezone
 from rest_framework import generics, permissions, status
 from rest_framework.response import Response
 from rest_framework.views import APIView
 
-from apps.friendships.models import Friendship
+from apps.friendships.selectors import blocked_user_ids, friend_ids
 
-from .models import Comment, Like, Post
+from .models import Comment, CommentLike, Like, Post
 from .serializers import CommentSerializer, PostSerializer
 
 SPOTIFY_SEARCH_URL = "https://api.spotify.com/v1/search"
@@ -31,18 +30,6 @@ def _fetch_track_by_id(user, spotify_track_id):
     if resp.status_code == 200:
         return _extract_track(resp.json())
     return None
-
-
-def _get_friend_ids(user):
-    friendships = Friendship.objects.filter(
-        status="accepted"
-    ).filter(
-        Q(from_user=user) | Q(to_user=user)
-    )
-    ids = set()
-    for f in friendships:
-        ids.add(f.from_user_id if f.to_user_id == user.id else f.to_user_id)
-    return ids
 
 
 class TrackSearchView(APIView):
@@ -112,10 +99,10 @@ class FeedView(generics.ListAPIView):
                 status=status.HTTP_403_FORBIDDEN,
             )
 
-        friend_ids = _get_friend_ids(request.user)
+        visible_ids = friend_ids(request.user) - blocked_user_ids(request.user)
         now = timezone.now()
         queryset = Post.objects.filter(
-            user_id__in=friend_ids,
+            user_id__in=visible_ids,
             expires_at__gt=now,
         ).select_related("user").prefetch_related("likes", "comments")
 
@@ -162,7 +149,12 @@ class CommentListCreateView(generics.ListCreateAPIView):
     permission_classes = [permissions.IsAuthenticated]
 
     def get_queryset(self):
-        return Comment.objects.filter(post_id=self.kwargs["pk"]).select_related("user")
+        return (
+            Comment.objects.filter(post_id=self.kwargs["pk"])
+            .exclude(user_id__in=blocked_user_ids(self.request.user))
+            .select_related("user")
+            .prefetch_related("likes")
+        )
 
     def perform_create(self, serializer):
         post = Post.objects.get(pk=self.kwargs["pk"])
@@ -176,3 +168,20 @@ class CommentDestroyView(generics.DestroyAPIView):
 
     def get_queryset(self):
         return Comment.objects.filter(user=self.request.user, post_id=self.kwargs["pk"])
+
+
+class CommentLikeToggleView(APIView):
+    """POST to like a comment, POST again to unlike (toggle)."""
+    permission_classes = [permissions.IsAuthenticated]
+
+    def post(self, request, pk, comment_pk):
+        try:
+            comment = Comment.objects.get(pk=comment_pk, post_id=pk)
+        except Comment.DoesNotExist:
+            return Response(status=status.HTTP_404_NOT_FOUND)
+
+        like, created = CommentLike.objects.get_or_create(comment=comment, user=request.user)
+        if not created:
+            like.delete()
+            return Response({"liked": False, "likes_count": comment.likes.count()})
+        return Response({"liked": True, "likes_count": comment.likes.count()})

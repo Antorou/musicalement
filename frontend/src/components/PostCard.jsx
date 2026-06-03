@@ -33,6 +33,17 @@ export default function PostCard({ post, onLikeToggle, onDelete }) {
     setBody("");
   }
 
+  async function handleCommentLike(commentId) {
+    const { data } = await api.post(`/posts/${post.id}/comments/${commentId}/like/`);
+    setComments((prev) =>
+      prev.map((c) =>
+        c.id === commentId
+          ? { ...c, liked_by_me: data.liked, likes_count: data.likes_count }
+          : c
+      )
+    );
+  }
+
   return (
     <div className="bg-gray-900 border border-white/5 rounded-2xl overflow-hidden hover:border-violet-500/30 transition-colors">
       <div className="flex gap-4 p-4">
@@ -107,10 +118,21 @@ export default function PostCard({ post, onLikeToggle, onDelete }) {
                   <p className="text-xs text-gray-600">No comments yet.</p>
                 )}
                 {comments.map((c) => (
-                  <p key={c.id} className="text-sm text-gray-300">
-                    <span className="text-violet-400 font-medium">{c.user?.username}</span>{" "}
-                    {c.body}
-                  </p>
+                  <div key={c.id} className="flex items-start justify-between gap-2">
+                    <p className="text-sm text-gray-300 min-w-0">
+                      <span className="text-violet-400 font-medium">{c.user?.username}</span>{" "}
+                      {c.body}
+                    </p>
+                    <button
+                      onClick={() => handleCommentLike(c.id)}
+                      className={`flex items-center gap-1 text-xs flex-shrink-0 transition-colors ${
+                        c.liked_by_me ? "text-violet-400" : "text-gray-600 hover:text-violet-400"
+                      }`}
+                    >
+                      <span>{c.liked_by_me ? "♥" : "♡"}</span>
+                      {c.likes_count > 0 && <span>{c.likes_count}</span>}
+                    </button>
+                  </div>
                 ))}
               </div>
               <form onSubmit={handleComment} className="flex gap-2 mt-3">

@@ -1,7 +1,9 @@
 import uuid
+from datetime import timedelta
 
 from django.contrib.auth.models import AbstractBaseUser, BaseUserManager, PermissionsMixin
 from django.db import models
+from django.utils import timezone
 
 
 class UserManager(BaseUserManager):
@@ -45,3 +47,32 @@ class User(AbstractBaseUser, PermissionsMixin):
 
     def __str__(self):
         return self.username
+
+    @property
+    def current_streak(self):
+        """
+        Number of consecutive days (ending today or yesterday) the user has posted.
+        Posting once a day is the app's core loop, so the streak is the count of
+        unbroken days up to the most recent post. A gap of more than one day resets it.
+        """
+        dates = (
+            self.posts.values_list("created_at", flat=True)
+            .order_by("-created_at")
+        )
+        # Collapse to a sorted set of distinct local dates, most recent first
+        days = sorted({timezone.localtime(dt).date() for dt in dates}, reverse=True)
+        if not days:
+            return 0
+
+        today = timezone.localdate()
+        # The streak is only "live" if the latest post is today or yesterday
+        if (today - days[0]).days > 1:
+            return 0
+
+        streak = 1
+        for prev, nxt in zip(days, days[1:]):
+            if (prev - nxt).days == 1:
+                streak += 1
+            else:
+                break
+        return streak

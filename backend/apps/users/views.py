@@ -17,8 +17,10 @@ from django.utils import timezone
 from rest_framework import generics, permissions
 from rest_framework_simplejwt.tokens import RefreshToken
 
+from apps.friendships.selectors import blocked_user_ids
+
 from .models import User
-from .serializers import UserSerializer
+from .serializers import UserProfileSerializer, UserSerializer
 
 SPOTIFY_AUTH_URL = "https://accounts.spotify.com/authorize"
 SPOTIFY_TOKEN_URL = "https://accounts.spotify.com/api/token"
@@ -138,7 +140,7 @@ class SpotifyCallbackView(generics.GenericAPIView):
 
 
 class MeView(generics.RetrieveAPIView):
-    serializer_class = UserSerializer
+    serializer_class = UserProfileSerializer
     permission_classes = [permissions.IsAuthenticated]
 
     def get_object(self):
@@ -153,10 +155,14 @@ class UserSearchView(generics.ListAPIView):
         q = self.request.query_params.get("search", "").strip()
         if not q:
             return User.objects.none()
-        return User.objects.filter(username__icontains=q).exclude(id=self.request.user.id)
+        return (
+            User.objects.filter(username__icontains=q)
+            .exclude(id=self.request.user.id)
+            .exclude(id__in=blocked_user_ids(self.request.user))
+        )
 
 
 class UserDetailView(generics.RetrieveAPIView):
-    serializer_class = UserSerializer
+    serializer_class = UserProfileSerializer
     permission_classes = [permissions.IsAuthenticated]
     queryset = User.objects.all()

@@ -5,8 +5,9 @@ from rest_framework.response import Response
 
 from apps.users.models import User
 
-from .models import Friendship
-from .serializers import FriendshipSerializer
+from .models import Block, Friendship
+from .selectors import blocked_user_ids
+from .serializers import BlockSerializer, FriendshipSerializer
 
 
 class FriendshipListCreateView(generics.ListCreateAPIView):
@@ -32,6 +33,10 @@ class FriendshipListCreateView(generics.ListCreateAPIView):
 
         if to_user == self.request.user:
             raise ValidationError({"to_user_id": "Cannot send a friend request to yourself."})
+
+        # Cannot befriend someone you blocked or who blocked you
+        if to_user.id in blocked_user_ids(self.request.user):
+            raise ValidationError({"detail": "Cannot send a request to a blocked user."})
 
         # Block if a friendship already exists in either direction
         exists = Friendship.objects.filter(
@@ -75,3 +80,44 @@ class FriendshipDetailView(generics.RetrieveUpdateDestroyAPIView):
         # Any other value (e.g. "rejected") = delete the request
         friendship.delete()
         return Response(status=status.HTTP_204_NO_CONTENT)
+
+
+class BlockListCreateView(generics.ListCreateAPIView):
+    """
+    GET  - list users the current user has blocked
+    POST - block a user: body = {"blocked_id": "<uuid>"}. Also drops any friendship.
+    """
+    serializer_class = BlockSerializer
+    permission_classes = [permissions.IsAuthenticated]
+
+    def get_queryset(self):
+        return Block.objects.filter(blocker=self.request.user).select_related("blocked")
+
+    def perform_create(self, serializer):
+        blocked_id = serializer.validated_data.pop("blocked_id")
+        try:
+            blocked = User.objects.get(pk=blocked_id)
+        except User.DoesNotExist:
+            raise ValidationError({"blocked_id": "User not found."})
+
+        if blocked == self.request.user:
+            raise ValidationError({"blocked_id": "Cannot block yourself."})
+
+        if Block.objects.filter(blocker=self.request.user, blocked=blocked).exists():
+            raise ValidationError({"detail": "User already blocked."})
+
+        # Blocking severs any existing friendship or pending request in either direction
+        Friendship.objects.filter(
+            Q(from_user=self.request.user, to_user=blocked) |
+            Q(from_user=blocked, to_user=self.request.user)
+        ).delete()
+
+        serializer.save(blocker=self.request.user, blocked=blocked)
+
+
+class BlockDestroyView(generics.DestroyAPIView):
+    """DELETE - unblock a user."""
+    permission_classes = [permissions.IsAuthenticated]
+
+    def get_queryset(self):
+        return Block.objects.filter(blocker=self.request.user)

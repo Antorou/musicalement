@@ -7,8 +7,8 @@ from django.utils import timezone
 from rest_framework.test import APIClient
 from rest_framework_simplejwt.tokens import RefreshToken
 
-from apps.friendships.models import Friendship
-from apps.posts.models import Post
+from apps.friendships.models import Block, Friendship
+from apps.posts.models import Comment, Post
 from apps.users.models import User
 
 
@@ -128,7 +128,6 @@ class TestCommentDestroyView:
         bob = make_user("bob", "s_bob")
         post = make_post(alice)
 
-        from apps.posts.models import Comment
         comment = Comment.objects.create(post=post, user=alice, body="alice's comment")
 
         client = make_client(bob)
@@ -137,3 +136,63 @@ class TestCommentDestroyView:
         )
         assert response.status_code == 404
         assert Comment.objects.filter(id=comment.id).exists()
+
+
+@pytest.mark.django_db
+class TestCommentLikeToggleView:
+    def test_like_and_unlike_comment(self):
+        alice = make_user("alice", "s_alice")
+        bob = make_user("bob", "s_bob")
+        post = make_post(bob)
+        comment = Comment.objects.create(post=post, user=bob, body="nice track")
+
+        client = make_client(alice)
+        url = reverse("comment_like", kwargs={"pk": post.id, "comment_pk": comment.id})
+
+        liked = client.post(url)
+        assert liked.status_code == 200
+        assert liked.data == {"liked": True, "likes_count": 1}
+
+        unliked = client.post(url)
+        assert unliked.data == {"liked": False, "likes_count": 0}
+
+    def test_like_unknown_comment_404(self):
+        alice = make_user("alice", "s_alice")
+        post = make_post(alice)
+        client = make_client(alice)
+        import uuid
+        url = reverse("comment_like", kwargs={"pk": post.id, "comment_pk": uuid.uuid4()})
+        assert client.post(url).status_code == 404
+
+
+@pytest.mark.django_db
+class TestBlockInFeed:
+    def test_blocked_friend_posts_hidden_from_feed(self):
+        alice = make_user("alice", "s_alice")
+        bob = make_user("bob", "s_bob")
+        Friendship.objects.create(from_user=alice, to_user=bob, status="accepted")
+        Block.objects.create(blocker=alice, blocked=bob)
+
+        make_post(alice)  # unlock the feed
+        bob_post = make_post(bob)
+
+        client = make_client(alice)
+        response = client.get(reverse("post_feed"))
+        assert response.status_code == 200
+        ids = [p["id"] for p in response.data]
+        assert str(bob_post.id) not in ids
+
+    def test_blocker_also_hidden_from_blocked_user_feed(self):
+        """Blocking is symmetric: the blocked user also stops seeing the blocker."""
+        alice = make_user("alice", "s_alice")
+        bob = make_user("bob", "s_bob")
+        Friendship.objects.create(from_user=alice, to_user=bob, status="accepted")
+        Block.objects.create(blocker=alice, blocked=bob)
+
+        alice_post = make_post(alice)
+        make_post(bob)  # unlock bob's feed
+
+        client = make_client(bob)
+        response = client.get(reverse("post_feed"))
+        ids = [p["id"] for p in response.data]
+        assert str(alice_post.id) not in ids

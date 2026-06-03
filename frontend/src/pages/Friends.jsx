@@ -11,19 +11,26 @@ function getOtherUser(friendship, currentUserId) {
 
 export default function Friends() {
   const [friendships, setFriendships] = useState([]);
+  const [blocks, setBlocks] = useState([]);
   const [currentUserId, setCurrentUserId] = useState(null);
   const [query, setQuery] = useState("");
   const [results, setResults] = useState([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    Promise.all([api.get("/users/me/"), api.get("/friendships/")])
-      .then(([meRes, fsRes]) => {
+    Promise.all([api.get("/users/me/"), api.get("/friendships/"), api.get("/friendships/blocks/")])
+      .then(([meRes, fsRes, blocksRes]) => {
         setCurrentUserId(meRes.data.id);
         setFriendships(fsRes.data);
+        setBlocks(blocksRes.data);
       })
       .finally(() => setLoading(false));
   }, []);
+
+  async function unblock(blockId) {
+    await api.delete(`/friendships/blocks/${blockId}/`);
+    setBlocks((prev) => prev.filter((b) => b.id !== blockId));
+  }
 
   async function search(e) {
     e.preventDefault();
@@ -194,6 +201,30 @@ export default function Friends() {
                 </div>
               )}
             </section>
+
+            {blocks.length > 0 && (
+              <section className="mt-6">
+                <h2 className="text-sm font-semibold text-gray-400 uppercase tracking-wider mb-3">
+                  Blocked ({blocks.length})
+                </h2>
+                <div className="space-y-2">
+                  {blocks.map((b) => (
+                    <div
+                      key={b.id}
+                      className="flex items-center justify-between bg-gray-900 border border-white/5 rounded-xl px-4 py-3"
+                    >
+                      <span className="font-medium text-gray-400">{b.blocked.username}</span>
+                      <button
+                        onClick={() => unblock(b.id)}
+                        className="px-3 py-1.5 bg-gray-800 hover:bg-gray-700 rounded-lg text-sm font-medium transition-colors"
+                      >
+                        Unblock
+                      </button>
+                    </div>
+                  ))}
+                </div>
+              </section>
+            )}
           </>
         )}
       </main>

@@ -62,3 +62,15 @@ class Comment(models.Model):
 
     def __str__(self):
         return f"{self.user.username} on {self.post}: {self.body[:40]}"
+
+
+class CommentLike(models.Model):
+    comment = models.ForeignKey(Comment, on_delete=models.CASCADE, related_name="likes")
+    user = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name="comment_likes")
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        unique_together = ("comment", "user")  # one like per user per comment
+
+    def __str__(self):
+        return f"{self.user.username} likes comment {self.comment_id}"

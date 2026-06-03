@@ -24,6 +24,18 @@ export default function Profile() {
       .finally(() => setLoading(false));
   }, [id, isOwnProfile]);
 
+  async function handleBlock() {
+    await api.post("/friendships/blocks/", { blocked_id: user.id });
+    setUser((prev) => ({ ...prev, is_blocked: true }));
+  }
+
+  async function handleUnblock() {
+    const { data } = await api.get("/friendships/blocks/");
+    const block = data.find((b) => b.blocked.id === user.id);
+    if (block) await api.delete(`/friendships/blocks/${block.id}/`);
+    setUser((prev) => ({ ...prev, is_blocked: false }));
+  }
+
   function handleLikeToggle(postId) {
     setPosts((prev) =>
       prev.map((p) => {
@@ -63,12 +75,36 @@ export default function Profile() {
                   {user.username[0].toUpperCase()}
                 </div>
               )}
-              <div>
+              <div className="flex-1 min-w-0">
                 <h1 className="text-2xl font-bold">{user.username}</h1>
-                {isOwnProfile && (
-                  <p className="text-sm text-gray-400">{posts.length} track{posts.length !== 1 ? "s" : ""} shared</p>
-                )}
+                <div className="flex items-center gap-3 text-sm text-gray-400">
+                  {isOwnProfile && (
+                    <span>{posts.length} track{posts.length !== 1 ? "s" : ""} shared</span>
+                  )}
+                  {user.current_streak > 0 && (
+                    <span className="text-orange-400" title="Consecutive days posted">
+                      🔥 {user.current_streak} day streak
+                    </span>
+                  )}
+                </div>
               </div>
+              {!isOwnProfile && (
+                user.is_blocked ? (
+                  <button
+                    onClick={handleUnblock}
+                    className="flex-shrink-0 px-4 py-1.5 bg-gray-800 hover:bg-gray-700 rounded-lg text-sm font-medium transition-colors"
+                  >
+                    Unblock
+                  </button>
+                ) : (
+                  <button
+                    onClick={handleBlock}
+                    className="flex-shrink-0 px-4 py-1.5 bg-gray-800 hover:bg-red-500/20 hover:text-red-400 rounded-lg text-sm font-medium transition-colors"
+                  >
+                    Block
+                  </button>
+                )
+              )}
             </div>
 
             {isOwnProfile ? (
