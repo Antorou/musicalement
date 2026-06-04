@@ -4,8 +4,9 @@ resource "random_password" "django_secret_key" {
 }
 
 locals {
-  rds_host = split(":", var.rds_endpoint)[0]
-  rds_port = split(":", var.rds_endpoint)[1]
+  rds_host      = split(":", var.rds_endpoint)[0]
+  rds_port      = split(":", var.rds_endpoint)[1]
+  frontend_host = trimprefix(trimprefix(var.frontend_url, "https://"), "http://")
 }
 
 resource "aws_secretsmanager_secret" "app" {
@@ -19,7 +20,7 @@ resource "aws_secretsmanager_secret_version" "app" {
   secret_id = aws_secretsmanager_secret.app.id
   secret_string = jsonencode({
     SECRET_KEY                = random_password.django_secret_key.result
-    ALLOWED_HOSTS             = "www.${trimprefix(trimprefix(var.frontend_url, "https://"), "http://")}"
+    ALLOWED_HOSTS             = local.frontend_host
     DJANGO_SETTINGS_MODULE    = "${var.project}.settings.prod"
     POSTGRES_DB               = var.project
     POSTGRES_USER             = var.project
