@@ -27,3 +27,13 @@ output "s3_media_bucket" {
   description = "S3 media bucket name"
   value       = module.s3.bucket_name
 }
+
+output "rds_endpoint" {
+  description = "RDS PostgreSQL endpoint"
+  value       = module.rds.endpoint
+}
+
+output "rds_password_secret_arn" {
+  description = "Secrets Manager ARN holding the RDS master password"
+  value       = module.rds.password_secret_arn
+}

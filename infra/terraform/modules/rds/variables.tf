@@ -1,13 +1,16 @@
-variable "aws_region" {
-  description = "AWS region"
-  type        = string
-  default     = "eu-west-3"
-}
-
 variable "project" {
   description = "Project name"
   type        = string
-  default     = "musicalement"
+}
+
+variable "vpc_id" {
+  description = "VPC ID"
+  type        = string
+}
+
+variable "private_subnet_ids" {
+  description = "Private subnet IDs for the DB subnet group"
+  type        = list(string)
 }
 
 variable "eks_node_sg_id" {
