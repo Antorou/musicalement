@@ -10,8 +10,3 @@ variable "project" {
   default     = "musicalement"
 }
 
-variable "eks_node_sg_id" {
-  description = "EKS node security group ID — wires the RDS ingress rule; leave empty until ANT-32"
-  type        = string
-  default     = ""
-}

@@ -14,12 +14,19 @@ module "s3" {
   account_id = data.aws_caller_identity.current.account_id
 }
 
+module "eks" {
+  source             = "./modules/eks"
+  project            = var.project
+  vpc_id             = module.vpc.vpc_id
+  private_subnet_ids = module.vpc.private_subnet_ids
+}
+
 module "rds" {
   source             = "./modules/rds"
   project            = var.project
   vpc_id             = module.vpc.vpc_id
   private_subnet_ids = module.vpc.private_subnet_ids
-  eks_node_sg_id     = var.eks_node_sg_id
+  eks_node_sg_id     = module.eks.node_security_group_id
 }
 
 module "elasticache" {
@@ -27,12 +34,14 @@ module "elasticache" {
   project            = var.project
   vpc_id             = module.vpc.vpc_id
   private_subnet_ids = module.vpc.private_subnet_ids
-  eks_node_sg_id     = var.eks_node_sg_id
+  eks_node_sg_id     = module.eks.node_security_group_id
 }
 
-module "eks" {
-  source             = "./modules/eks"
-  project            = var.project
-  vpc_id             = module.vpc.vpc_id
-  private_subnet_ids = module.vpc.private_subnet_ids
+module "irsa" {
+  source              = "./modules/irsa"
+  project             = var.project
+  cluster_name        = module.eks.cluster_name
+  oidc_provider_arn   = module.eks.oidc_provider_arn
+  oidc_provider_url   = module.eks.oidc_provider_url
+  s3_media_bucket_arn = module.s3.bucket_arn
 }

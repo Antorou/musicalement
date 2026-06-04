@@ -62,3 +62,18 @@ output "eks_node_security_group_id" {
   description = "EKS node security group ID"
   value       = module.eks.node_security_group_id
 }
+
+output "irsa_app_role_arn" {
+  description = "IAM role ARN for the app (S3 media access)"
+  value       = module.irsa.app_role_arn
+}
+
+output "irsa_eso_role_arn" {
+  description = "IAM role ARN for External Secrets Operator"
+  value       = module.irsa.eso_role_arn
+}
+
+output "irsa_ebs_csi_role_arn" {
+  description = "IAM role ARN for the EBS CSI driver"
+  value       = module.irsa.ebs_csi_role_arn
+}
