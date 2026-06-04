@@ -11,6 +11,7 @@ module "eks" {
   enable_irsa                              = true
   cluster_endpoint_public_access           = true
   cluster_endpoint_private_access          = true
+  enable_cluster_creator_admin_permissions = true
 
   eks_managed_node_groups = {
     default = {
