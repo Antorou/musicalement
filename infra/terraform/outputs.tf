@@ -77,3 +77,8 @@ output "irsa_ebs_csi_role_arn" {
   description = "IAM role ARN for the EBS CSI driver"
   value       = module.irsa.ebs_csi_role_arn
 }
+
+output "irsa_alb_role_arn" {
+  description = "IAM role ARN for the AWS Load Balancer Controller"
+  value       = module.irsa.alb_role_arn
+}

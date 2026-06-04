@@ -130,6 +130,48 @@ resource "aws_iam_role_policy_attachment" "ebs_csi" {
   policy_arn = "arn:aws:iam::aws:policy/service-role/AmazonEBSCSIDriverPolicy"
 }
 
+# --- ALB Controller role ---
+
+data "aws_iam_policy_document" "alb_trust" {
+  statement {
+    effect  = "Allow"
+    actions = ["sts:AssumeRoleWithWebIdentity"]
+    principals {
+      type        = "Federated"
+      identifiers = [var.oidc_provider_arn]
+    }
+    condition {
+      test     = "StringEquals"
+      variable = "${local.oidc_url}:sub"
+      values   = ["system:serviceaccount:kube-system:aws-load-balancer-controller"]
+    }
+    condition {
+      test     = "StringEquals"
+      variable = "${local.oidc_url}:aud"
+      values   = ["sts.amazonaws.com"]
+    }
+  }
+}
+
+resource "aws_iam_role" "alb" {
+  name               = "${var.project}-alb"
+  assume_role_policy = data.aws_iam_policy_document.alb_trust.json
+
+  tags = { Project = var.project }
+}
+
+resource "aws_iam_policy" "alb_controller" {
+  name   = "${var.project}-alb-controller"
+  policy = file("${path.module}/alb-controller-policy.json")
+
+  tags = { Project = var.project }
+}
+
+resource "aws_iam_role_policy_attachment" "alb" {
+  role       = aws_iam_role.alb.name
+  policy_arn = aws_iam_policy.alb_controller.arn
+}
+
 resource "aws_eks_addon" "ebs_csi" {
   cluster_name             = var.cluster_name
   addon_name               = "aws-ebs-csi-driver"
