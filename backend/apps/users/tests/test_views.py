@@ -36,7 +36,7 @@ class TestMeView:
 @pytest.mark.django_db
 class TestUserSearchView:
     def test_search_finds_user(self, user, db):
-        other = User.objects.create_user(username="bob", spotify_id="spotify_bob")
+        User.objects.create_user(username="bob", spotify_id="spotify_bob")
         client = make_client(user)
         response = client.get(reverse("user_search") + "?search=bob")
         assert response.status_code == 200
