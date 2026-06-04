@@ -22,6 +22,10 @@ frontend:
 env:
   secretName: musicalement-secret
 
+ingress:
+  enabled: true
+  host: ""
+
 worker:
   replicaCount: 1
   resources:
