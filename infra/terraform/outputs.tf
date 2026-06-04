@@ -82,3 +82,8 @@ output "irsa_alb_role_arn" {
   description = "IAM role ARN for the AWS Load Balancer Controller"
   value       = module.irsa.alb_role_arn
 }
+
+output "ci_role_arn" {
+  description = "IAM role ARN for GitHub Actions CI/CD (OIDC)"
+  value       = module.ci.ci_role_arn
+}

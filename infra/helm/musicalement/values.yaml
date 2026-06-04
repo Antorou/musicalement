@@ -20,7 +20,7 @@ frontend:
       memory: 128Mi
 
 env:
-  secretName: musicalement-secret
+  secretName: musicalement-app
 
 ingress:
   enabled: true

@@ -37,6 +37,16 @@ module "elasticache" {
   eks_node_sg_id     = module.eks.node_security_group_id
 }
 
+module "ci" {
+  source       = "./modules/ci"
+  project      = var.project
+  account_id   = data.aws_caller_identity.current.account_id
+  aws_region   = var.aws_region
+  cluster_name = module.eks.cluster_name
+  cluster_arn  = module.eks.cluster_arn
+  github_repo  = "Antorou/musicalement"
+}
+
 module "irsa" {
   source              = "./modules/irsa"
   project             = var.project
