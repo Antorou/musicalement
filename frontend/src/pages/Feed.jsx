@@ -48,7 +48,7 @@ export default function Feed() {
             <p className="text-4xl mb-4">🎵</p>
             <h2 className="text-xl font-semibold mb-2">Share first, then see</h2>
             <p className="text-gray-400 mb-6">
-              Post today's track to unlock your friends' feed.
+              Post today&apos;s track to unlock your friends&apos; feed.
             </p>
             <Link
               to="/publish"
@@ -65,7 +65,7 @@ export default function Feed() {
 
         {!loading && !error && (
           <>
-            <h1 className="text-2xl font-bold mb-6">Today's feed</h1>
+            <h1 className="text-2xl font-bold mb-6">Today&apos;s feed</h1>
             {posts.length === 0 ? (
               <div className="text-center py-20">
                 <p className="text-4xl mb-4">👋</p>

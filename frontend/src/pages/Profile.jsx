@@ -113,7 +113,7 @@ export default function Profile() {
                   Your history
                 </h2>
                 {posts.length === 0 ? (
-                  <p className="text-gray-500 text-sm">You haven't shared anything yet.</p>
+                  <p className="text-gray-500 text-sm">You haven&apos;t shared anything yet.</p>
                 ) : (
                   <div className="space-y-4">
                     {posts.map((p) => (

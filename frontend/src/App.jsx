@@ -26,7 +26,7 @@ function LoginPage() {
   return (
     <div className="min-h-screen bg-gray-950 text-white flex flex-col items-center justify-center px-4">
       <h1 className="text-4xl font-bold text-violet-400 mb-2 tracking-tight">musicalement</h1>
-      <p className="text-gray-400 mb-8">Share what you're listening to, once a day.</p>
+      <p className="text-gray-400 mb-8">Share what you&apos;re listening to, once a day.</p>
       <a href="/api/v1/auth/spotify/">
         <button className="px-8 py-3 bg-violet-600 hover:bg-violet-500 rounded-xl font-semibold text-white transition-colors">
           Connect with Spotify

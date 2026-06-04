@@ -1,6 +1,27 @@
 import { useState } from "react";
 import { Link } from "react-router-dom";
+import PropTypes from "prop-types";
 import api from "../api/client";
+
+PostCard.propTypes = {
+  post: PropTypes.shape({
+    id: PropTypes.string.isRequired,
+    album_cover_url: PropTypes.string,
+    track_title: PropTypes.string.isRequired,
+    artist_name: PropTypes.string.isRequired,
+    album_name: PropTypes.string.isRequired,
+    note: PropTypes.string,
+    user: PropTypes.shape({
+      id: PropTypes.string.isRequired,
+      username: PropTypes.string.isRequired,
+    }),
+    liked_by_me: PropTypes.bool.isRequired,
+    likes_count: PropTypes.number.isRequired,
+    comments_count: PropTypes.number.isRequired,
+  }).isRequired,
+  onLikeToggle: PropTypes.func.isRequired,
+  onDelete: PropTypes.func,
+};
 
 export default function PostCard({ post, onLikeToggle, onDelete }) {
   const [comments, setComments] = useState([]);
@@ -73,7 +94,7 @@ export default function PostCard({ post, onLikeToggle, onDelete }) {
             )}
           </div>
           {post.note && (
-            <p className="mt-2 text-sm text-gray-300 italic">"{post.note}"</p>
+            <p className="mt-2 text-sm text-gray-300 italic">&quot;{post.note}&quot;</p>
           )}
           <div className="flex items-center gap-3 mt-3">
             <button
