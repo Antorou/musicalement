@@ -130,6 +130,55 @@ resource "aws_iam_role_policy_attachment" "ebs_csi" {
   policy_arn = "arn:aws:iam::aws:policy/service-role/AmazonEBSCSIDriverPolicy"
 }
 
+# --- external-dns role ---
+
+data "aws_iam_policy_document" "external_dns_trust" {
+  statement {
+    effect  = "Allow"
+    actions = ["sts:AssumeRoleWithWebIdentity"]
+    principals {
+      type        = "Federated"
+      identifiers = [var.oidc_provider_arn]
+    }
+    condition {
+      test     = "StringEquals"
+      variable = "${local.oidc_url}:sub"
+      values   = ["system:serviceaccount:external-dns:external-dns"]
+    }
+    condition {
+      test     = "StringEquals"
+      variable = "${local.oidc_url}:aud"
+      values   = ["sts.amazonaws.com"]
+    }
+  }
+}
+
+resource "aws_iam_role" "external_dns" {
+  name               = "${var.project}-external-dns"
+  assume_role_policy = data.aws_iam_policy_document.external_dns_trust.json
+
+  tags = { Project = var.project }
+}
+
+data "aws_iam_policy_document" "external_dns" {
+  statement {
+    effect    = "Allow"
+    actions   = ["route53:ChangeResourceRecordSets"]
+    resources = ["arn:aws:route53:::hostedzone/${var.route53_zone_id}"]
+  }
+  statement {
+    effect    = "Allow"
+    actions   = ["route53:ListHostedZones", "route53:ListResourceRecordSets", "route53:ListTagsForResource"]
+    resources = ["*"]
+  }
+}
+
+resource "aws_iam_role_policy" "external_dns" {
+  name   = "route53-external-dns"
+  role   = aws_iam_role.external_dns.id
+  policy = data.aws_iam_policy_document.external_dns.json
+}
+
 # --- ALB Controller role ---
 
 data "aws_iam_policy_document" "alb_trust" {

@@ -22,3 +22,8 @@ variable "s3_media_bucket_arn" {
   description = "ARN of the media S3 bucket"
   type        = string
 }
+
+variable "route53_zone_id" {
+  description = "Route53 hosted zone ID for external-dns"
+  type        = string
+}

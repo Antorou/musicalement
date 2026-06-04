@@ -87,3 +87,13 @@ output "ci_role_arn" {
   description = "IAM role ARN for GitHub Actions CI/CD (OIDC)"
   value       = module.ci.ci_role_arn
 }
+
+output "certificate_arn" {
+  description = "ACM certificate ARN for antorou.online"
+  value       = module.dns.certificate_arn
+}
+
+output "irsa_external_dns_role_arn" {
+  description = "IAM role ARN for external-dns"
+  value       = module.irsa.external_dns_role_arn
+}

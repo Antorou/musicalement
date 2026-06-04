@@ -51,6 +51,7 @@ resource "aws_security_group_rule" "rds_from_eks" {
 }
 
 resource "aws_db_instance" "main" {
+  # tflint-ignore: aws_db_instance_default_parameter_group
   identifier             = var.project
   engine                 = "postgres"
   engine_version         = "16"
