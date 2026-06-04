@@ -21,3 +21,18 @@ module "rds" {
   private_subnet_ids = module.vpc.private_subnet_ids
   eks_node_sg_id     = var.eks_node_sg_id
 }
+
+module "elasticache" {
+  source             = "./modules/elasticache"
+  project            = var.project
+  vpc_id             = module.vpc.vpc_id
+  private_subnet_ids = module.vpc.private_subnet_ids
+  eks_node_sg_id     = var.eks_node_sg_id
+}
+
+module "eks" {
+  source             = "./modules/eks"
+  project            = var.project
+  vpc_id             = module.vpc.vpc_id
+  private_subnet_ids = module.vpc.private_subnet_ids
+}

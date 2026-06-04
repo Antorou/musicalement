@@ -37,3 +37,28 @@ output "rds_password_secret_arn" {
   description = "Secrets Manager ARN holding the RDS master password"
   value       = module.rds.password_secret_arn
 }
+
+output "redis_endpoint" {
+  description = "ElastiCache Redis primary endpoint"
+  value       = module.elasticache.redis_endpoint
+}
+
+output "eks_cluster_name" {
+  description = "EKS cluster name"
+  value       = module.eks.cluster_name
+}
+
+output "eks_cluster_endpoint" {
+  description = "EKS cluster API endpoint"
+  value       = module.eks.cluster_endpoint
+}
+
+output "eks_oidc_provider_url" {
+  description = "EKS OIDC provider URL (required for IRSA)"
+  value       = module.eks.oidc_provider_url
+}
+
+output "eks_node_security_group_id" {
+  description = "EKS node security group ID"
+  value       = module.eks.node_security_group_id
+}
